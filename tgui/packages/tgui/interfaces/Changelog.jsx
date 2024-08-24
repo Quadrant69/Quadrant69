@@ -96,7 +96,9 @@ export class Changelog extends Component {
     // act('get_month', { date });
     // QUADRANT69 EDIT CHANGE END
 
-    fetch(resolveAsset(assetToResolve)).then(async (changelogData) => {
+    // QUADRANT69 REMOVAL START - (Original code has no handlers for HTTP errors)
+    /*
+    fetch(resolveAsset(date + '.yml')).then(async (changelogData) => {
       const result = await changelogData.text();
       const errorRegex = /^Cannot find/;
 
@@ -105,14 +107,44 @@ export class Changelog extends Component {
 
         self.setData('Loading changelog data' + '.'.repeat(attemptNumber + 3));
         setTimeout(() => {
-          self.getData(date, upstreamChangelog, attemptNumber + 1); // QUADRANT69 EDIT CHANGE START - ORIGINAL:
-          // self.getData(date, upstreamChangelog, attemptNumber + 1);
-          // QUADRANT69 EDIT CHANGE END
+          self.getData(date, attemptNumber + 1);
         }, timeout);
       } else {
         self.setData(yaml.load(result, { schema: yaml.CORE_SCHEMA }));
       }
     });
+    */
+ // QUADRANT69 REMOVAL END
+ // QUADRANT69 EDIT ADDITION START
+    fetch(resolveAsset(assetToResolve))
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text();
+      })
+      .then(async (result) => {
+        const errorRegex = /^Cannot find/;
+
+        if (errorRegex.test(result)) {
+          const timeout = 150 + attemptNumber * 150;
+
+          self.setData('Loading changelog data' + '.'.repeat(attemptNumber + 3));
+          setTimeout(() => {
+            self.getData(date, upstreamChangelog, attemptNumber + 1);
+          }, timeout);
+        } else {
+          self.setData(yaml.load(result, { schema: yaml.CORE_SCHEMA }));
+        }
+      })
+      .catch((error) => {
+          const timeout = 150 + attemptNumber * 150;
+          self.setData('Error loading changelog data. Retrying...' + 'x' + attemptNumber);
+          setTimeout(() => {
+            self.getData(date, upstreamChangelog, attemptNumber + 1);
+          }, timeout);
+      });
+      // QUADRANT69 EDIT ADDITION END
   };
 
   componentDidMount() {
