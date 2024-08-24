@@ -53,6 +53,7 @@ export class Changelog extends Component {
       upstreamChangelog: false, // QUADRANT69 EDIT ADDITION
     };
     this.dateChoices = [];
+    this.dateChoices_q69 = [];
   }
 
   setData(data) {
@@ -116,15 +117,27 @@ export class Changelog extends Component {
 
   componentDidMount() {
     const {
-      data: { dates = [] },
+      data: { dates = [], dates_q69 = [], upstreamChangelog },
     } = useBackend();
 
     if (dates) {
       dates.forEach((date) =>
         this.dateChoices.push(dateformat(date, 'mmmm yyyy', true)),
       );
-      this.setSelectedDate(this.dateChoices[0]);
-      this.getData(dates[0]);
+      if (upstreamChangelog) {
+        this.setSelectedDate(this.dateChoices[0]);
+        this.getData(dates[0], true);
+      }
+    }
+
+    if (dates_q69) {
+      dates_q69.forEach((date) =>
+        this.dateChoices_q69.push(dateformat(date, 'mmmm yyyy', true)),
+      );
+      if (!upstreamChangelog) {
+        this.setSelectedDate(this.dateChoices_q69[0]);
+        this.getData(dates_q69[0], false);
+      }
     }
   }
 
@@ -133,11 +146,11 @@ export class Changelog extends Component {
     // const { data, selectedDate, selectedIndex } = this.state;
     // QUADRANT69 EDIT CHANGE END
     const {
-      data: { dates },
+      data: { dates = [], dates_q69 = [] },
     } = useBackend();
-    const { dateChoices } = this;
+    const { dateChoices, dateChoices_q69 } = this;
 
-    const dateDropdown = dateChoices.length > 0 && (
+    const dateDropdown = ((dateChoices.length > 0 && upstreamChangelog) || (dateChoices_q69.length > 0 && !upstreamChangelog)) && (
       <Stack mb={1}>
         <Stack.Item>
           <Button
@@ -149,7 +162,12 @@ export class Changelog extends Component {
 
               this.setData('Loading changelog data...');
               this.setSelectedIndex(index);
-              this.setSelectedDate(dateChoices[index]);
+              if (upstreamChangelog) {
+                this.setSelectedDate(dateChoices[index]);
+              }
+              else {
+                this.setSelectedDate(dateChoices_q69[index]);
+              }
               window.scrollTo(
                 0,
                 document.body.scrollHeight ||
@@ -157,7 +175,7 @@ export class Changelog extends Component {
               );
               { /* return this.getData(dates[index]); // ORIGINAL */ }
               { /* QUADRANT69 EDIT CHANGE BEGIN*/ }
-              return this.getData(dates[index], upstreamChangelog);
+              return this.getData(upstreamChangelog ? dates[index] : dates_q69[index], upstreamChangelog);
               { /* QUADRANT69 EDIT CHANGE END */ }
             }}
           />
@@ -165,10 +183,9 @@ export class Changelog extends Component {
         <Stack.Item>
           <Dropdown
             autoScroll={false}
-            options={dateChoices}
+            options={upstreamChangelog ? dateChoices : dateChoices_q69}
             onSelected={(value) => {
-              const index = dateChoices.indexOf(value);
-
+              const index = upstreamChangelog ? dateChoices.indexOf(value) : dateChoices_q69.indexOf(value);
               this.setData('Loading changelog data...');
               this.setSelectedIndex(index);
               this.setSelectedDate(value);
@@ -179,7 +196,7 @@ export class Changelog extends Component {
               );
               { /* return this.getData(dates[index]); // ORIGINAL */ }
               { /* QUADRANT69 EDIT CHANGE BEGIN*/ }
-              return this.getData(dates[index], upstreamChangelog);
+              return this.getData(upstreamChangelog ? dates[index] : dates_q69[index], upstreamChangelog);
               { /* QUADRANT69 EDIT CHANGE END */ }
             }}
             selected={selectedDate}
@@ -189,14 +206,19 @@ export class Changelog extends Component {
         <Stack.Item>
           <Button
             className="Changelog__Button"
-            disabled={selectedIndex === dateChoices.length - 1}
+            disabled={selectedIndex === (upstreamChangelog ? dateChoices.length : dateChoices_q69.length) - 1}
             icon={'chevron-right'}
             onClick={() => {
               const index = selectedIndex + 1;
 
               this.setData('Loading changelog data...');
               this.setSelectedIndex(index);
-              this.setSelectedDate(dateChoices[index]);
+              if (upstreamChangelog) {
+                this.setSelectedDate(dateChoices[index]);
+              }
+              else {
+                this.setSelectedDate(dateChoices_q69[index]);
+              }
               window.scrollTo(
                 0,
                 document.body.scrollHeight ||
@@ -204,7 +226,7 @@ export class Changelog extends Component {
               );
               { /* return this.getData(dates[index]); // ORIGINAL */ }
               { /* QUADRANT69 EDIT CHANGE BEGIN*/ }
-              return this.getData(dates[index], upstreamChangelog);
+              return this.getData(upstreamChangelog ? dates[index] : dates_q69[index], upstreamChangelog);
               { /* QUADRANT69 EDIT CHANGE END */ }
             }}
           />
@@ -219,13 +241,18 @@ export class Changelog extends Component {
               this.setupstreamChangelog(altLog);
               this.setData('Loading changelog data...');
               this.setSelectedIndex(index);
-              this.setSelectedDate(dateChoices[index]);
+              if (upstreamChangelog) {
+                this.setSelectedDate(dateChoices[index]);
+              }
+              else {
+                this.setSelectedDate(dateChoices_q69[index]);
+              }
               window.scrollTo(
                 0,
                 document.body.scrollHeight ||
                   document.documentElement.scrollHeight,
               );
-              return this.getData(dates[index], altLog);
+              return this.getData(altLog ? dates[index] : dates_q69[index], altLog);
             }}
             content="Show NovaSector ChangeLog"
           />
