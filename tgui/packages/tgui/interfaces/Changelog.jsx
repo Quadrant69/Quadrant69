@@ -50,6 +50,7 @@ export class Changelog extends Component {
       data: 'Loading changelog data...',
       selectedDate: '',
       selectedIndex: 0,
+      upstreamChangelog: false, // QUADRANT69 EDIT ADDITION
     };
     this.dateChoices = [];
   }
@@ -66,10 +67,23 @@ export class Changelog extends Component {
     this.setState({ selectedIndex });
   }
 
-  getData = (date, attemptNumber = 1) => {
+  // QUADRANT69 EDIT ADDITION START
+  setupstreamChangelog(upstreamChangelog) {
+    this.setState({ upstreamChangelog });
+  }
+  // QUADRANT69 EDIT ADDITION END
+
+  getData = (date, upstreamChangelog, attemptNumber = 1) => {
     const { act } = useBackend();
     const self = this;
     const maxAttempts = 6;
+
+    // QUADRANT69 EDIT ADDITION START
+    let assetToResolve = date + '.yml' + '_q69';
+    if (upstreamChangelog) {
+      assetToResolve = date + '.yml';
+    }
+    // QUADRANT69 EDIT ADDITION END
 
     if (attemptNumber > maxAttempts) {
       return this.setData(
@@ -77,9 +91,11 @@ export class Changelog extends Component {
       );
     }
 
-    act('get_month', { date });
+    act('get_month', { date: date, upstreamChangelog: upstreamChangelog }); // QUADRANT69 EDIT CHANGE START - ORIGINAL:
+    // act('get_month', { date });
+    // QUADRANT69 EDIT CHANGE END
 
-    fetch(resolveAsset(date + '.yml')).then(async (changelogData) => {
+    fetch(resolveAsset(assetToResolve)).then(async (changelogData) => {
       const result = await changelogData.text();
       const errorRegex = /^Cannot find/;
 
@@ -88,7 +104,9 @@ export class Changelog extends Component {
 
         self.setData('Loading changelog data' + '.'.repeat(attemptNumber + 3));
         setTimeout(() => {
-          self.getData(date, attemptNumber + 1);
+          self.getData(date, upstreamChangelog, attemptNumber + 1); // QUADRANT69 EDIT CHANGE START - ORIGINAL:
+          // self.getData(date, upstreamChangelog, attemptNumber + 1);
+          // QUADRANT69 EDIT CHANGE END
         }, timeout);
       } else {
         self.setData(yaml.load(result, { schema: yaml.CORE_SCHEMA }));
@@ -111,7 +129,9 @@ export class Changelog extends Component {
   }
 
   render() {
-    const { data, selectedDate, selectedIndex } = this.state;
+    const { data, selectedDate, selectedIndex, upstreamChangelog } = this.state; // QUADRANT69 EDIT CHANGE START - ORIGINAL:
+    // const { data, selectedDate, selectedIndex } = this.state;
+    // QUADRANT69 EDIT CHANGE END
     const {
       data: { dates },
     } = useBackend();
@@ -135,7 +155,10 @@ export class Changelog extends Component {
                 document.body.scrollHeight ||
                   document.documentElement.scrollHeight,
               );
-              return this.getData(dates[index]);
+              { /* return this.getData(dates[index]); // ORIGINAL */ }
+              { /* QUADRANT69 EDIT CHANGE BEGIN*/ }
+              return this.getData(dates[index], upstreamChangelog);
+              { /* QUADRANT69 EDIT CHANGE END */ }
             }}
           />
         </Stack.Item>
@@ -154,7 +177,10 @@ export class Changelog extends Component {
                 document.body.scrollHeight ||
                   document.documentElement.scrollHeight,
               );
-              return this.getData(dates[index]);
+              { /* return this.getData(dates[index]); // ORIGINAL */ }
+              { /* QUADRANT69 EDIT CHANGE BEGIN*/ }
+              return this.getData(dates[index], upstreamChangelog);
+              { /* QUADRANT69 EDIT CHANGE END */ }
             }}
             selected={selectedDate}
             width="150px"
@@ -176,16 +202,44 @@ export class Changelog extends Component {
                 document.body.scrollHeight ||
                   document.documentElement.scrollHeight,
               );
-              return this.getData(dates[index]);
+              { /* return this.getData(dates[index]); // ORIGINAL */ }
+              { /* QUADRANT69 EDIT CHANGE BEGIN*/ }
+              return this.getData(dates[index], upstreamChangelog);
+              { /* QUADRANT69 EDIT CHANGE END */ }
             }}
           />
         </Stack.Item>
+        {/* QUADRANT69 EDIT ADDITION START */}
+        <Stack.Item>
+          <Button.Checkbox
+            checked={upstreamChangelog}
+            onClick={() => {
+              const index = selectedIndex;
+              const altLog = !upstreamChangelog;
+              this.setupstreamChangelog(altLog);
+              this.setData('Loading changelog data...');
+              this.setSelectedIndex(index);
+              this.setSelectedDate(dateChoices[index]);
+              window.scrollTo(
+                0,
+                document.body.scrollHeight ||
+                  document.documentElement.scrollHeight,
+              );
+              return this.getData(dates[index], altLog);
+            }}
+            content="Show NovaSector ChangeLog"
+          />
+        </Stack.Item>
+        {/* QUADRANT69 EDIT ADDITION END */}
       </Stack>
     );
 
     const header = (
       <Section>
-        <h1>Nova Sector</h1>
+        {/* <h1>Nova Sector</h1> // ORIGINAL */}
+        {/* QUADRANT69 EDIT CHANGE BEGIN - Rebranding */}
+        <h1>Quadrant69</h1>
+        {/* QUADRANT69 EDIT CHANGE END */}
         <p>
           <b>Thanks to: </b>
           Traditional Games 13, Skyrat Station 13, Baystation 12, /vg/station,
@@ -193,7 +247,9 @@ export class Changelog extends Component {
           original Space Station 13 developers, Invisty for the title image and
           the countless others who have contributed to the game.
         </p>
-        <p>
+        {/* QUADRANT69 EDIT CHANGE BEGIN*/}
+
+        {/* <p>
           {'Current project maintainers can be found '}
           <a href="https://github.com/NovaSector?tab=members">here</a>
           {', recent GitHub contributors can be found '}
@@ -201,7 +257,9 @@ export class Changelog extends Component {
             here
           </a>
           .
-        </p>
+        </p> */}
+        {/* QUADRANT69 EDIT CHANGE END */}
+
         {/* <p>
           {'You can also join our forums '}
           <a href="">here</a>.
