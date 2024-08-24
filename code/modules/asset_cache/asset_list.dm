@@ -507,7 +507,7 @@ GLOBAL_LIST_EMPTY(asset_datums)
 		SSassets.transport.register_asset(item_id, file("html/changelogs/archive/" + item_filename))
 	else
 		item_id = "[date].yml_q69"
-		SSassets.transport.register_asset(item_id, file("html/changelogs/archive_q69/" + item_filename))
+		SSassets.transport.register_asset(item_id, file("html/changelogs_q69/archive/" + item_filename))
 	//QUADRANT69 EDIT ADDITION END
 /datum/asset/changelog_item/send(client)
 	//QUADRANT69 EDIT CHANGE BEGIN - Q69_MODULE_NOID

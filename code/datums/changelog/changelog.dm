@@ -53,7 +53,7 @@
 		var/archive_date = ymlRegex.Replace(archive_file, "")
 		data["dates"] = list(archive_date) + data["dates"]
 	//QUADRANT69 EDIT ADDITION BEGIN - Q69_MODULE_NOID
-	for(var/archive_file_q69 in sort_list(flist("html/changelogs/archive_q69/")))
+	for(var/archive_file_q69 in sort_list(flist("html/changelogs_q69/archive/")))
 		var/archive_date_q69 = ymlRegex.Replace(archive_file_q69, "")
 		data["dates_q69"] = list(archive_date_q69) + data["dates_q69"]
 	//QUADRANT69 EDIT ADDITION END
