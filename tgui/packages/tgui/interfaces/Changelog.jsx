@@ -50,8 +50,10 @@ export class Changelog extends Component {
       data: 'Loading changelog data...',
       selectedDate: '',
       selectedIndex: 0,
+      upstreamChangelog: false, // QUADRANT69 EDIT ADDITION
     };
     this.dateChoices = [];
+    this.dateChoices_q69 = [];
   }
 
   setData(data) {
@@ -66,10 +68,23 @@ export class Changelog extends Component {
     this.setState({ selectedIndex });
   }
 
-  getData = (date, attemptNumber = 1) => {
+  // QUADRANT69 EDIT ADDITION START
+  setupstreamChangelog(upstreamChangelog) {
+    this.setState({ upstreamChangelog });
+  }
+  // QUADRANT69 EDIT ADDITION END
+
+  getData = (date, upstreamChangelog, attemptNumber = 1) => {
     const { act } = useBackend();
     const self = this;
     const maxAttempts = 6;
+
+    // QUADRANT69 EDIT ADDITION START
+    let assetToResolve = date + '.yml' + '_q69';
+    if (upstreamChangelog) {
+      assetToResolve = date + '.yml';
+    }
+    // QUADRANT69 EDIT ADDITION END
 
     if (attemptNumber > maxAttempts) {
       return this.setData(
@@ -77,8 +92,12 @@ export class Changelog extends Component {
       );
     }
 
-    act('get_month', { date });
+    act('get_month', { date: date, upstreamChangelog: upstreamChangelog }); // QUADRANT69 EDIT CHANGE START - ORIGINAL:
+    // act('get_month', { date });
+    // QUADRANT69 EDIT CHANGE END
 
+    // QUADRANT69 REMOVAL START - (Original code has no handlers for HTTP errors)
+    /*
     fetch(resolveAsset(date + '.yml')).then(async (changelogData) => {
       const result = await changelogData.text();
       const errorRegex = /^Cannot find/;
@@ -94,30 +113,76 @@ export class Changelog extends Component {
         self.setData(yaml.load(result, { schema: yaml.CORE_SCHEMA }));
       }
     });
+    */
+ // QUADRANT69 REMOVAL END
+ // QUADRANT69 EDIT ADDITION START
+    fetch(resolveAsset(assetToResolve))
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text();
+      })
+      .then(async (result) => {
+        const errorRegex = /^Cannot find/;
+
+        if (errorRegex.test(result)) {
+          const timeout = 150 + attemptNumber * 150;
+
+          self.setData('Loading changelog data' + '.'.repeat(attemptNumber + 3));
+          setTimeout(() => {
+            self.getData(date, upstreamChangelog, attemptNumber + 1);
+          }, timeout);
+        } else {
+          self.setData(yaml.load(result, { schema: yaml.CORE_SCHEMA }));
+        }
+      })
+      .catch((error) => {
+          const timeout = 150 + attemptNumber * 150;
+          self.setData('Error loading changelog data. Retrying...' + 'x' + attemptNumber);
+          setTimeout(() => {
+            self.getData(date, upstreamChangelog, attemptNumber + 1);
+          }, timeout);
+      });
+      // QUADRANT69 EDIT ADDITION END
   };
 
   componentDidMount() {
     const {
-      data: { dates = [] },
+      data: { dates = [], dates_q69 = [], upstreamChangelog },
     } = useBackend();
 
     if (dates) {
       dates.forEach((date) =>
         this.dateChoices.push(dateformat(date, 'mmmm yyyy', true)),
       );
-      this.setSelectedDate(this.dateChoices[0]);
-      this.getData(dates[0]);
+      if (upstreamChangelog) {
+        this.setSelectedDate(this.dateChoices[0]);
+        this.getData(dates[0], true);
+      }
+    }
+
+    if (dates_q69) {
+      dates_q69.forEach((date) =>
+        this.dateChoices_q69.push(dateformat(date, 'mmmm yyyy', true)),
+      );
+      if (!upstreamChangelog) {
+        this.setSelectedDate(this.dateChoices_q69[0]);
+        this.getData(dates_q69[0], false);
+      }
     }
   }
 
   render() {
-    const { data, selectedDate, selectedIndex } = this.state;
+    const { data, selectedDate, selectedIndex, upstreamChangelog } = this.state; // QUADRANT69 EDIT CHANGE START - ORIGINAL:
+    // const { data, selectedDate, selectedIndex } = this.state;
+    // QUADRANT69 EDIT CHANGE END
     const {
-      data: { dates },
+      data: { dates = [], dates_q69 = [] },
     } = useBackend();
-    const { dateChoices } = this;
+    const { dateChoices, dateChoices_q69 } = this;
 
-    const dateDropdown = dateChoices.length > 0 && (
+    const dateDropdown = ((dateChoices.length > 0 && upstreamChangelog) || (dateChoices_q69.length > 0 && !upstreamChangelog)) && (
       <Stack mb={1}>
         <Stack.Item>
           <Button
@@ -129,23 +194,30 @@ export class Changelog extends Component {
 
               this.setData('Loading changelog data...');
               this.setSelectedIndex(index);
-              this.setSelectedDate(dateChoices[index]);
+              if (upstreamChangelog) {
+                this.setSelectedDate(dateChoices[index]);
+              }
+              else {
+                this.setSelectedDate(dateChoices_q69[index]);
+              }
               window.scrollTo(
                 0,
                 document.body.scrollHeight ||
                   document.documentElement.scrollHeight,
               );
-              return this.getData(dates[index]);
+              { /* return this.getData(dates[index]); // ORIGINAL */ }
+              { /* QUADRANT69 EDIT CHANGE BEGIN*/ }
+              return this.getData(upstreamChangelog ? dates[index] : dates_q69[index], upstreamChangelog);
+              { /* QUADRANT69 EDIT CHANGE END */ }
             }}
           />
         </Stack.Item>
         <Stack.Item>
           <Dropdown
             autoScroll={false}
-            options={dateChoices}
+            options={upstreamChangelog ? dateChoices : dateChoices_q69}
             onSelected={(value) => {
-              const index = dateChoices.indexOf(value);
-
+              const index = upstreamChangelog ? dateChoices.indexOf(value) : dateChoices_q69.indexOf(value);
               this.setData('Loading changelog data...');
               this.setSelectedIndex(index);
               this.setSelectedDate(value);
@@ -154,7 +226,10 @@ export class Changelog extends Component {
                 document.body.scrollHeight ||
                   document.documentElement.scrollHeight,
               );
-              return this.getData(dates[index]);
+              { /* return this.getData(dates[index]); // ORIGINAL */ }
+              { /* QUADRANT69 EDIT CHANGE BEGIN*/ }
+              return this.getData(upstreamChangelog ? dates[index] : dates_q69[index], upstreamChangelog);
+              { /* QUADRANT69 EDIT CHANGE END */ }
             }}
             selected={selectedDate}
             width="150px"
@@ -163,29 +238,67 @@ export class Changelog extends Component {
         <Stack.Item>
           <Button
             className="Changelog__Button"
-            disabled={selectedIndex === dateChoices.length - 1}
+            disabled={selectedIndex === (upstreamChangelog ? dateChoices.length : dateChoices_q69.length) - 1}
             icon={'chevron-right'}
             onClick={() => {
               const index = selectedIndex + 1;
 
               this.setData('Loading changelog data...');
               this.setSelectedIndex(index);
-              this.setSelectedDate(dateChoices[index]);
+              if (upstreamChangelog) {
+                this.setSelectedDate(dateChoices[index]);
+              }
+              else {
+                this.setSelectedDate(dateChoices_q69[index]);
+              }
               window.scrollTo(
                 0,
                 document.body.scrollHeight ||
                   document.documentElement.scrollHeight,
               );
-              return this.getData(dates[index]);
+              { /* return this.getData(dates[index]); // ORIGINAL */ }
+              { /* QUADRANT69 EDIT CHANGE BEGIN*/ }
+              return this.getData(upstreamChangelog ? dates[index] : dates_q69[index], upstreamChangelog);
+              { /* QUADRANT69 EDIT CHANGE END */ }
             }}
           />
         </Stack.Item>
+        {/* QUADRANT69 EDIT ADDITION START */}
+        <Stack.Item>
+          <Button.Checkbox
+            checked={upstreamChangelog}
+            onClick={() => {
+              const index = selectedIndex;
+              const altLog = !upstreamChangelog;
+              this.setupstreamChangelog(altLog);
+              this.setData('Loading changelog data...');
+              this.setSelectedIndex(index);
+              if (upstreamChangelog) {
+                this.setSelectedDate(dateChoices[index]);
+              }
+              else {
+                this.setSelectedDate(dateChoices_q69[index]);
+              }
+              window.scrollTo(
+                0,
+                document.body.scrollHeight ||
+                  document.documentElement.scrollHeight,
+              );
+              return this.getData(altLog ? dates[index] : dates_q69[index], altLog);
+            }}
+            content="Show NovaSector ChangeLog"
+          />
+        </Stack.Item>
+        {/* QUADRANT69 EDIT ADDITION END */}
       </Stack>
     );
 
     const header = (
       <Section>
-        <h1>Nova Sector</h1>
+        {/* <h1>Nova Sector</h1> // ORIGINAL */}
+        {/* QUADRANT69 EDIT CHANGE BEGIN - Rebranding */}
+        <h1>Quadrant69</h1>
+        {/* QUADRANT69 EDIT CHANGE END */}
         <p>
           <b>Thanks to: </b>
           Traditional Games 13, Skyrat Station 13, Baystation 12, /vg/station,
@@ -193,7 +306,9 @@ export class Changelog extends Component {
           original Space Station 13 developers, Invisty for the title image and
           the countless others who have contributed to the game.
         </p>
-        <p>
+        {/* QUADRANT69 EDIT CHANGE BEGIN*/}
+
+        {/* <p>
           {'Current project maintainers can be found '}
           <a href="https://github.com/NovaSector?tab=members">here</a>
           {', recent GitHub contributors can be found '}
@@ -201,7 +316,9 @@ export class Changelog extends Component {
             here
           </a>
           .
-        </p>
+        </p> */}
+        {/* QUADRANT69 EDIT CHANGE END */}
+
         {/* <p>
           {'You can also join our forums '}
           <a href="">here</a>.

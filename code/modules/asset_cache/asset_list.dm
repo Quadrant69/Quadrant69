@@ -489,21 +489,47 @@ GLOBAL_LIST_EMPTY(asset_datums)
 /datum/asset/changelog_item
 	_abstract = /datum/asset/changelog_item
 	var/item_filename
+	//QUADRANT69 EDIT ADDITION BEGIN - Q69_MODULE_NOID - (We add item_id so we can retrieve asset based on its id)
+	var/item_id
+	//QUADRANT69 EDIT ADDITION END
 
-/datum/asset/changelog_item/New(date)
+//QUADRANT69 EDIT CHANGE BEGIN - Q69_MODULE_NOID
+/datum/asset/changelog_item/New(date, upstreamChangelog)
+///datum/asset/changelog_item/New(date) - QUADRANT69 EDIT - ORIGINAL
+//QUADRANT69 EDIT CHANGE END
 	item_filename = SANITIZE_FILENAME("[date].yml")
-	SSassets.transport.register_asset(item_filename, file("html/changelogs/archive/" + item_filename))
-
+	//QUADRANT69 EDIT REMOVAL BEGIN - Q69_MODULE_NOID
+	// SSassets.transport.register_asset(item_filename, file("html/changelogs/archive/" + item_filename)) - QUADRANT69 EDIT - ORIGINAL
+	//QUADRANT69 EDIT REMOVAL END
+	//QUADRANT69 EDIT ADDITION BEGIN - Q69_MODULE_NOID - (Register assets based on upstream changelog or not)
+	if (upstreamChangelog)
+		item_id = "[date].yml"
+		SSassets.transport.register_asset(item_id, file("html/changelogs/archive/" + item_filename))
+	else
+		item_id = "[date].yml_q69"
+		SSassets.transport.register_asset(item_id, file("html/changelogs_q69/archive/" + item_filename))
+	//QUADRANT69 EDIT ADDITION END
 /datum/asset/changelog_item/send(client)
-	if (!item_filename)
+	//QUADRANT69 EDIT CHANGE BEGIN - Q69_MODULE_NOID
+	if (!item_id)
+	//if (!item_filename) - QUADRANT69 EDIT - ORIGINAL
+	//QUADRANT69 EDIT CHANGE END
 		return
-	. = SSassets.transport.send_assets(client, item_filename)
+	//QUADRANT69 EDIT CHANGE BEGIN - Q69_MODULE_NOID
+	. = SSassets.transport.send_assets(client, item_id)
+	//. = SSassets.transport.send_assets(client, item_filename) - QUADRANT69 EDIT - ORIGINAL
+	//QUADRANT69 EDIT CHANGE END
 
 /datum/asset/changelog_item/get_url_mappings()
-	if (!item_filename)
+	//QUADRANT69 EDIT CHANGE BEGIN - Q69_MODULE_NOID
+	if (!item_id)
+	//if (!item_filename) - QUADRANT69 EDIT - ORIGINAL
+	//QUADRANT69 EDIT CHANGE END
 		return
-	. = list("[item_filename]" = SSassets.transport.get_asset_url(item_filename))
-
+	//QUADRANT69 EDIT CHANGE BEGIN - Q69_MODULE_NOID
+	. = list("[item_id]" = SSassets.transport.get_asset_url(item_id))
+	//. = list("[item_filename]" = SSassets.transport.get_asset_url(item_filename)) - QUADRANT69 EDIT - ORIGINAL
+	//QUADRANT69 EDIT CHANGE END
 /datum/asset/spritesheet/simple
 	_abstract = /datum/asset/spritesheet/simple
 	var/list/assets
